@@ -115,11 +115,11 @@ file and exports the standard web identity environment variables:
   before_script:
     - echo "${GITLAB_OIDC_TOKEN}" > "${CI_BUILDS_DIR}/.oidc_token"
     - export AWS_WEB_IDENTITY_TOKEN_FILE="${CI_BUILDS_DIR}/.oidc_token"
-    - export AWS_ROLE_ARN="${ROLE_ARN}"
+    - export AWS_ROLE_ARN="${AUTOMATION_ROLE_ARN}"
     - export AWS_ROLE_SESSION_NAME="gitlab-${CI_PROJECT_ID}-${CI_PIPELINE_ID}"
 ```
 
-Jobs extend the template and set `ROLE_ARN` to the role for their tier. No
+Jobs extend the template and set `AUTOMATION_ROLE_ARN` to the role for their tier. No
 further authentication code is required in any job.
 
 ### Why this pattern specifically
