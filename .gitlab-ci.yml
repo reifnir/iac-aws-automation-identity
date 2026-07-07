@@ -1,0 +1,52 @@
+include:
+  - project: reifnir-public-projects/iac/job-templates
+    ref: main
+    file: /gitlab/terraform-pipeline-default.yaml
+
+variables:
+  # Temporarily allow deploying from feature branches
+  APPLY_TERRAFORM_WHEN: on_success
+  TF_VAR_gitlab_token: $GITLAB_AUTOMATION_TOKEN
+  # Only the one state file here, so use a default key that is unique to this project
+  TERRAFORM_STATE_KEY: $CI_PROJECT_PATH/terraform.tfstate
+
+# Shared base for any job that calls AWS. Jobs extend this and set 
+# AUTOMATION_ROLE_ARN to the role for their tier. The AWS SDK credential
+# provider chain resolves AWS_WEB_IDENTITY_TOKEN_FILE + AWS_ROLE_ARN natively
+# (CLI, Terraform, boto3), and re-exchanges the token automatically, so no
+# further authentication code is required in the job itself.
+#
+# This will make its way to terraform templates once it's working
+.aws_oidc_base:
+  id_tokens:
+    GITLAB_OIDC_TOKEN:
+      aud: https://gitlab.com
+  before_script:
+    - echo "${GITLAB_OIDC_TOKEN}" > "${CI_BUILDS_DIR}/.oidc_token"
+    - export AWS_WEB_IDENTITY_TOKEN_FILE="${CI_BUILDS_DIR}/.oidc_token"
+    - export AWS_ROLE_ARN="${AUTOMATION_ROLE_ARN}"
+    - export AWS_ROLE_SESSION_NAME="gitlab-${CI_PROJECT_ID}-${CI_PIPELINE_ID}"
+
+# --- Rollout verification (manual, non-blocking) -----------------------------
+# Per the ADR: verify the read-only role from a feature branch and the deploy
+# role from main, then migrate consuming jobs onto .aws_oidc_base tier by tier.
+.verify_oidc:
+  extends: .aws_oidc_base
+  stage: .post
+  image:
+    name: public.ecr.aws/aws-cli/aws-cli:latest
+    entrypoint: [""]
+  script:
+    - aws sts get-caller-identity
+
+verify:oidc-readonly:
+  extends: .verify_oidc
+  variables:
+    AUTOMATION_ROLE_ARN: arn:aws:iam::${AWS_ACCOUNT_ID_ROOT}:role/ReifnirAutomationReadOnly
+
+verify:oidc-deploy:
+  extends: .verify_oidc
+  variables:
+    AUTOMATION_ROLE_ARN: arn:aws:iam::${AWS_ACCOUNT_ID_ROOT}:role/ReifnirAutomationDeploy
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
