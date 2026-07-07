@@ -43,8 +43,6 @@ verify:oidc-readonly:
   extends: .verify_oidc
   variables:
     AUTOMATION_ROLE_ARN: arn:aws:iam::${AWS_ACCOUNT_ID_ROOT}:role/ReifnirAutomationReadOnly
-  rules:
-    - when: manual
 
 verify:oidc-deploy:
   extends: .verify_oidc
@@ -52,4 +50,3 @@ verify:oidc-deploy:
     AUTOMATION_ROLE_ARN: arn:aws:iam::${AWS_ACCOUNT_ID_ROOT}:role/ReifnirAutomationDeploy
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      when: manual
