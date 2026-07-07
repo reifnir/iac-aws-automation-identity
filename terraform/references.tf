@@ -1,3 +1,5 @@
+data "aws_caller_identity" "current" {}
+
 # AWS authentication for GitLab CI via OIDC web identity federation.
 # See docs/identity-approach-adr.md for the full rationale.
 data "gitlab_group" "trusted" {
@@ -16,6 +18,11 @@ data "gitlab_projects" "trusted" {
   per_page          = 100
 }
 
+data "tls_certificate" "gitlab" {
+  url = local.gitlab_url
+}
+
+# Projections of references, so doesn't go into locals.tf
 locals {
   # path_with_namespace => immutable numeric project ID
   trusted_projects = {
@@ -28,6 +35,3 @@ locals {
   deploy_subs         = sort([for path in keys(local.trusted_projects) : "project_path:${path}:ref_type:branch:ref:${local.deploy_branch}"])
 }
 
-data "tls_certificate" "gitlab" {
-  url = local.gitlab_url
-}
