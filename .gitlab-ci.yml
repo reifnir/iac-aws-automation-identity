@@ -4,8 +4,6 @@ include:
     file: /gitlab/terraform-pipeline-default.yaml
 
 variables:
-  # Temporarily allow deploying from feature branches
-  APPLY_TERRAFORM_WHEN: on_success
   TF_VAR_gitlab_token: $GITLAB_AUTOMATION_TOKEN
   # Only the one state file here, so use a default key that is unique to this project
   TERRAFORM_STATE_KEY: $CI_PROJECT_PATH/terraform.tfstate
