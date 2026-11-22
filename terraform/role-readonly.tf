@@ -41,7 +41,7 @@ data "aws_iam_policy_document" "readonly_trust" {
 
 resource "aws_iam_role" "readonly" {
   name                 = "ReifnirAutomationReadOnly"
-  description          = "Read-only role for GitLab CI plan/preview jobs, assumable from any ref of any project under ${local.gitlab_group_path} via OIDC."
+  description          = "Read-only role for GitLab CI plan/preview jobs, assumable from any ref of any project under ${local.gitlab_groups_description} via OIDC."
   assume_role_policy   = data.aws_iam_policy_document.readonly_trust.json
   max_session_duration = local.max_session_duration
 
@@ -50,8 +50,8 @@ resource "aws_iam_role" "readonly" {
     # principal conditions; fail loudly instead (likely a token/permission
     # problem on the GitLab lookup).
     precondition {
-      condition     = length(local.trusted_projects) > 0
-      error_message = "No projects found under GitLab group '${local.gitlab_group_path}'; refusing to render trust policies."
+      condition     = length(local.empty_trusted_groups) == 0
+      error_message = "No projects found under GitLab group(s) '${join(", ", local.empty_trusted_groups)}'; refusing to render trust policies."
     }
   }
 }
